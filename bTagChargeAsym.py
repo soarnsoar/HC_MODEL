@@ -26,20 +26,29 @@ class bTagChargeAsym(PhysicsModel):
         _max_SF=str(_max_SF)
 
 
-        print("SF_Others[1, "+_min+" , "+_max_SF+"]")
+
 
         if not self.NoScaleOnOthers :
+            print("SF_Others[1, "+_min+" , "+_max_SF+"]")
             self.modelBuilder.doVar("SF_Others[1, "+_min+" , "+_max_SF+"]")
         
         ####------SF for b+/b- ---> SF0 +- dSF_Asym
 
-        self.modelBuilder.doVar("SF0[1, 0. ,3.0]")
         self.modelBuilder.doVar("dAsym[0, -0.1. ,0.1]")
+        
+        if self.FreezeSF0:
+            print("[Freeze SF0]")
+            #self.modelBuilder.doVar("SF0[1., 1. ,1.]")
+            self.modelBuilder.factory_( 'expr::SF0(\"1.\", dAsym)')
+        else:
+            self.modelBuilder.doVar("SF0[1, 0. ,3.0]")
+            POI_LIST.append("SF0")            
+
 
         self.modelBuilder.factory_( 'expr::SF_bplus(\"@0*(1+@1)\", SF0,dAsym)')
         self.modelBuilder.factory_( 'expr::SF_bminus(\"@0*(1-@1)\", SF0,dAsym)')
 
-        POI_LIST.append("SF0")
+
         POI_LIST.append("dAsym")
         if not self.NoScaleOnOthers:
             POI_LIST.append("SF_Others")
@@ -99,7 +108,7 @@ class bTagChargeAsym(PhysicsModel):
         print(str(physOptions))
 
         self.NoScaleOnOthers=0
-        
+        self.FreezeSF0=0
         self.dict_ymc={}
 
         for po in physOptions:
@@ -112,6 +121,9 @@ class bTagChargeAsym(PhysicsModel):
             if 'ApplyBtagSF' in po:
                 self.NoScaleOnOthers=1
                 print("!!ApplyBtagSF!!")
+            if 'FreezeSF0' in po:
+                self.FreezeSF0=1
+                print("!!Freeze SF0!!")
         for key in self.dict_ymc:
             print(key,self.dict_ymc[key])
     def getYieldScale(self,bin,process): ##bin process in datacard
