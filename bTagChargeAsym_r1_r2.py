@@ -28,93 +28,31 @@ class bTagChargeAsym(PhysicsModel):
 
 
 
-        if not self.NoScaleOnOthers :
-            print("SF_Others[1, "+_min+" , "+_max_SF+"]")
-            self.modelBuilder.doVar("SF_Others[1, "+_min+" , "+_max_SF+"]")
-        
+
+        print("C_Others[1, 0 , 3]")
+        self.modelBuilder.doVar("C_Others[1, 0 , 3]")
+        POI_LIST.append("C_Others")
         ####------SF for b+/b- ---> SF0 +- dSF_Asym
 
-        self.modelBuilder.doVar("dAsym[0, -1. ,1]")
-        
-        if self.FreezeSF0:
-            print("[Freeze SF0]")
-            #self.modelBuilder.doVar("SF0[1., 1. ,1.]")
-            self.modelBuilder.factory_( 'expr::SF0(\"1.\", dAsym)')
-        else:
-            self.modelBuilder.doVar("SF0[1, 0. ,3.0]")
-            POI_LIST.append("SF0")            
-
-
-        self.modelBuilder.factory_( 'expr::SF_bplus(\"@0*(1+@1)\", SF0,dAsym)')
-        self.modelBuilder.factory_( 'expr::SF_bminus(\"@0*(1-@1)\", SF0,dAsym)')
-
-
-        POI_LIST.append("dAsym")
-
-        if self.Norm_bPlusMinus:
-            
-            self.modelBuilder.doVar("C_b[1, 0. ,3.0]")
-            self.modelBuilder.doVar("C_Others[1, 0. ,3.0]")
-            
-        if self.Norm_MC:
-            self.modelBuilder.doVar("C_norm[1, 0. ,3.0]")
-
-            
-        for origin in origins:
+        borigins=["bplus","bminus",]
+        for origin in borigins:
 
             _min="0."
             _max="3.0"
-            if "Others" in origin :
-                _min="0.0"
-                _max="10.0"
-
-            if self.NoScaleOnOthers:
-                if origin=="Others" : continue
-            else:
-                if origin=="Others" :
-                    self.modelBuilder.doVar("SF_Others[1, "+_min+" , "+_max+"]")
-
-            ##----Load init yield of each channel
-            #N1=Pass
-            #N2=Fail
-            N1=self.dict_ymc["N_"+origin+"_PASS"]
-            N2=self.dict_ymc["N_"+origin+"_FAIL"]
 
             r1="r_"+origin+"_PASS"
             r2="r_"+origin+"_FAIL" ## will be expressed with C & SF
-            C="C_"+origin  ## Pass + Fail Overall norm factor
-            SF="SF_"+origin
-
-            ##C --> norm factor
-            if self.ConserveYield:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"1\", '+SF+')')                
-            elif self.Norm_bPlusMinus:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"@0\", C_b)') ## apply overall C_b to C_bplus C_bminus
-            elif self.Norm_MC:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"@0\", C_norm)')
-            else:
-                self.modelBuilder.doVar(C+"[1, "+_min+" , "+_max+"]")                
-            
-            ## r1 = SF*C
-            self.modelBuilder.factory_( 'expr::'+r1+'(\"@0*@1\", '+SF+','+C+')')
-            print('expr::'+r1+'(\"@0*@1\", '+SF+','+C+')')
-            ## r2 = (C-r1)*N1/N2 + C
-            self.modelBuilder.factory_( 'expr::'+r2+'(\"(@0-@1)*'+N1+'/'+N2+' + @0 \", '+C+','+r1+')')
-            print('expr::'+r2+'(\"(@0-@1)*'+N1+'/'+N2+' + @0 \", '+C+','+r1+')')
-
-
-
+            self.modelBuilder.doVar(r1+"[1, 0 , 3]")
+            self.modelBuilder.doVar(r2+"[1, 0 , 3]")
+            POI_LIST.append(r1)
+            POI_LIST.append(r2)
         
+
 
 
 
 
         POIS=",".join(POI_LIST)
-        ##----UseOnly dAsym As POI
-        POIS="dAsym"
-        #if self.Norm_bPlusMinus:
-        #    POIS+=",C_b"
-        #    POIS+=",C_Others"
         self.modelBuilder.doSet("POI",POIS)
         print("POIS",POIS)
 
@@ -190,11 +128,8 @@ class bTagChargeAsym(PhysicsModel):
 
         if self.NoScaleOnOthers:
             if 'from_Others' in process:
-                scale=1
-                if self.Norm_bPlusMinus:
-                    scale="C_Others"
-                if self.Norm_MC:
-                    scale="C_norm"
+                scale="C_Others"
+
         print (scale)
         return scale
 bTagChargeAsymFit=bTagChargeAsym()

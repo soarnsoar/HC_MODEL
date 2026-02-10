@@ -12,90 +12,38 @@ class bChargeIDEff(PhysicsModel):
     def doParametersOfInterest(self):
         print("<doParametersOfInterest>")
         """Create POI out of signal strength """
-        POI_LIST=[]
-        origin_parton_bins=["bplus","bminus","light"]
-        charge_obj_bins=["muH","muL","eH","eL","jG","jB"]
-        pt=self.pt
-
-        for origin_parton in origin_parton_bins:
+        POI_LIST=["SF"]
+        
 
 
-            _min="0."
-            _max="10.0"
-            if "light" in origin_parton :
-                _min="0.0"
-                _max="10.0"
+        _min="0."
+        _max="10.0"
                 
-            ##give last bin strength additional d.o.f.
-            r6="r_"+origin_parton+"_"+charge_obj_bins[5]
-            print("-Add param",r6)
-            self.modelBuilder.doVar(r6+"[1, "+_min+" , "+_max+"]")                
-            
-            
-            ####------SF
-            SF1="SF_"+origin_parton+"_"+charge_obj_bins[0]
-            SF2="SF_"+origin_parton+"_"+charge_obj_bins[1]
-            SF3="SF_"+origin_parton+"_"+charge_obj_bins[2]
-            SF4="SF_"+origin_parton+"_"+charge_obj_bins[3]
-            SF5="SF_"+origin_parton+"_"+charge_obj_bins[4]
-            
-            self.modelBuilder.doVar(SF1+"[1, "+_min+" , "+_max+"]")
-            self.modelBuilder.doVar(SF2+"[1, "+_min+" , "+_max+"]")
-            self.modelBuilder.doVar(SF3+"[1, "+_min+" , "+_max+"]")
-            self.modelBuilder.doVar(SF4+"[1, "+_min+" , "+_max+"]")
-            self.modelBuilder.doVar(SF5+"[1, "+_min+" , "+_max+"]")
-            
-            if origin_parton != "light":
-                POI_LIST.append(SF1)
-                POI_LIST.append(SF2)
-                POI_LIST.append(SF3)
-                POI_LIST.append(SF4)
-                POI_LIST.append(SF5)
-                POI_LIST.append(r6)    
+        ##give last bin strength additional d.o.f.
 
-            ##----Load init yield of each channel
-            #N1,N2,N3,N4,N5,N6
-            #N6=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[5]+"_"+pt]
-            #N5=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[4]+"_"+pt]
-            #N4=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[3]+"_"+pt]
-            #N3=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[2]+"_"+pt]
-            #N2=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[1]+"_"+pt]
-            #N1=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[0]+"_"+pt]
 
-            N6=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[5]]
-            N5=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[4]]
-            N4=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[3]]
-            N3=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[2]]
-            N2=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[1]]
-            N1=self.dict_ymc["N_"+origin_parton+"_"+charge_obj_bins[0]]
+        #self.modelBuilder.doVar("r_pass[1, "+_min+" , "+_max+"]")
+        self.modelBuilder.doVar("r_fail[1, "+_min+" , "+_max+"]")                
+            
+            
+        ####------SF
+        self.modelBuilder.doVar("SF[1, "+_min+" , "+_max+"]")
+
+
+        N_PASS=self.dict_ymc["N_PASS"]
+        N_FAIL=self.dict_ymc["N_FAIL"]
+        
 
                 
-            ##-----Add formula
-            ##--SF6(==>Bad jet SF->completely (anti)correlated to SF5, which means it can be expressed in SF5)
-            SF6="SF_"+origin_parton+"_"+charge_obj_bins[5]
-            ## SF6 = (N5+N6-N5*SF5)/N6
-            self.modelBuilder.factory_( 'expr::'+SF6+'(\"('+N5+ '+' + N6 + '- '+N5+'*@0)/'+N6+'\", '+SF5+')')
-            ##---jG(=Good jet)
-            r5="r_"+origin_parton+"_"+charge_obj_bins[4]
-            ## r5 = SF5*r6/SF6
-            self.modelBuilder.factory_( 'expr::'+r5+'(\"@0*@1/@2\", '+SF5+','+r6+','+SF6+')')
-            ##---eL(=LowScore-Electron)
-            r4="r_"+origin_parton+"_"+charge_obj_bins[3]
-            ## r4 = SF4*(r5N5 + r6N6)/(N4+N5+N6-SF4*N4)
-            self.modelBuilder.factory_( 'expr::'+r4+'(\"@0*('+N5+'*@1 + '+N6+'*@2)/('+N4+'+'+N5+'+'+N6+'-'+N4+'*@0)\", '+SF4+','+r5+','+r6+')')
-            ##---eH(=HighScore-Electron)
-            r3="r_"+origin_parton+"_"+charge_obj_bins[2]
-            ## r3 = SF3*(r4N4 + r5N5 + r6N6)/(N3+N4+N5+N6-SF3*N3)
-            self.modelBuilder.factory_( 'expr::'+r3+'(\"@0*('+N4+'*@1 + '+N5+'*@2 + '+N6+'*@3)/('+N3+'+'+N4+'+'+N5+'+'+N6+'-'+N3+'*@0)\", '+SF3+','+r4+','+r5+','+r6+')')
-            ##---muL(=LowScore-Muon)
-            r2="r_"+origin_parton+"_"+charge_obj_bins[1]
-            ## r2 = SF2*(r3N3 + r4N4 + r5N5 + r6N6)/(N2+N3+N4+N5+N6-SF2*N2)
-            self.modelBuilder.factory_( 'expr::'+r2+'(\"@0*('+N3+'*@1 + '+N4+'*@2 + '+N5+'*@3 + '+N6+'*@4)/('+N2+'+'+N3+'+'+N4+'+'+N5+'+'+N6+'-'+N2+'*@0)\", '+SF2+','+r3+','+r4+','+r5+','+r6+')')
-            ##--muH(=HighScore-Muon)
-            r1="r_"+origin_parton+"_"+charge_obj_bins[0]
-            ## r1 = SF1*(r2N2 + r3N3 + r4N4 + r5N5 + r6N6)/(N1+N2+N3+N4+N5+N6-SF1*N1)
-            self.modelBuilder.factory_( 'expr::'+r1+'(\"@0*('+N2+'*@1 + '+N3+'*@2 + '+N4+'*@3 + '+N5+'*@4 +'+N6+'*@5)/('+N1+'+'+N2+'+'+N3+'+'+N4+'+'+N5+'+'+N6+'-'+N1+'*@0)\", '+SF1+','+r2+','+r3+','+r4+','+r5+','+r6+')')
-
+        ##-----Add formula
+        ## eff_mc = N_PASS/N_PASS+N_FAIL
+        ## eff_data = r_pass*N_PASS/[r_pass*N_PASS + r_fail*N_FAIL]
+        ## SF = data/mc = r_pass*(N_PASS+N_FAIL)/[r_pass*N_PASS + r_fail*N_FAIL]
+        ## ->  by this relation, we can express r_pass with SF and r_fail
+        ## SF*[r_pass*N_PASS + r_fail*N_FAIL] = r_pass*(N_PASS+N_FAIL)
+        ## r_pass*( N_FAIL + N_PASS - SF*N_PASS) = SF*r_fail*N_FAIL
+        ## r_pass = SF*r_fail*N_FAIL/[N_FAIL + N_PASS - SF*N_PASS]
+        self.modelBuilder.factory_( 'expr::r_pass(\" @0*'+N_FAIL+'*@1/('+N_PASS+' + '+N_FAIL+' - '+N_PASS+'*@1) \", r_fail,SF)')
 
 
 
@@ -106,73 +54,44 @@ class bChargeIDEff(PhysicsModel):
     def setPhysicsOptions(self,physOptions):
         print("<setPhysicsOptions>")
         print(str(physOptions))
-
+        self.passname="NOTSET"
+        self.failname="NOTSET"
         self.dict_ymc={}
 
         for po in physOptions:
-            if "ptbin" in po:
-              self.pt=po.split("=")[1]  
+            if "passname" in po:
+                self.passname=po.split("=")[1]
+            elif "failname" in po:
+                self.failname=po.split("=")[1]            
             elif "=" in po:
                 key=po.split("=")[0]
                 value=float(po.split("=")[1])
                 self.dict_ymc[key]=str(value)
                 print( key,value)
+
         for key in self.dict_ymc:
             print(key,self.dict_ymc[key])
+        if self.passname=="NOSET":
+            1/0
+        if self.failname=="NOSET":
+            1/0
+        print(self.passname,self.failname)
     def getYieldScale(self,bin,process): ##bin process in datacard
-        #print("<getYieldScale>")
-        #print(process)
-        #LeptonMinus_bJetLeptonicSide_TestMuon_HasSLTMuonHigh_30To50_2017
-        #bTaggedJet_from_LightAndCharm__TTLJ
-
-        #if "DYbbar"==process or "DY_bbar"==process or "DY_bplus"==process :
-        #    print("DY b+")
-        #    return "r_bbar"
-        #elif "DYbevt"==process or "DYb"==process or "DY_b"==process or "DY_bminus"==process:
-        #    print("DY b-")
-        #    return "r_b"
-        #else: ## other bkg
-        #    return 1
-
+        print(process)
+        print(bin)
         scale=1
-        #"r_"+origin_parton+"_"+charge_obj_bins[0]+"_"+pt
-        origin_parton=""
-        charge_obj_bin=""
-        pt=""
         ##---origin parton
-        if "from_bminus" in process:
-            origin_parton="bminus"
-        elif "from_bplus" in process:
-            origin_parton="bplus"
-        elif "from_LightAndCharm" in process:
-            origin_parton="light"
+        if "from_B" in process:
+            print("!! from_B in processname")
+            if self.failname in bin:
+                scale="r_fail"
+            elif self.passname in bin:
+                scale="r_pass"
         else:
-            print( "---Unkown parton origin")
-            1/0
-        
-        ##---charge_obj_bins
-        #charge_obj_bins=["muH","muL","eH","eL","jG","jB"]
-        if "SLTMuonHigh" in bin:
-            charge_obj_bin="muH"
-        elif "SLTMuonLow" in bin:
-            charge_obj_bin="muL"
-        elif "SLTElectronHigh" in bin:
-            charge_obj_bin="eH"
-        elif "SLTElectronLow" in bin:
-            charge_obj_bin="eL"
-        elif "GoodBJet" in bin:
-            charge_obj_bin="jG"
-        elif "BadBJet" in bin:
-            charge_obj_bin="jB"
-        else:
-            print( "---unknown charge_obj_bin-->",bin)
-            1/0
-        
-
+            scale=1
         
         print( "----<getYieldScale>----")
         print (bin,process)
-        scale= "r_"+origin_parton+"_"+charge_obj_bin
-        print (scale)
+        print ('scale->',scale)
         return scale
 bChargeIDEffFit=bChargeIDEff()
