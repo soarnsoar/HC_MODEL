@@ -13,13 +13,22 @@ class bbarAsym(PhysicsModel):
         print("<doParametersOfInterest>")
         """Create POI out of signal strength """
         #####---POIs -> slope/intercept  -> slopeshape's signal strength & nominal shape's signal strength.
-        ####Contraint ->  totalweight=[0,2]
+
         POI_LIST=[]
-        self.modelBuilder.doVar("bbar_over_b[1,0.5,1.5]")
-        self.modelBuilder.doVar("r_b[1,0.5,1.5]")
-        POI_LIST.append('bbar_over_b')
-        POI_LIST.append('r_b')
-        self.modelBuilder.factory_( 'expr::r_bbar(\"@0*@1\", bbar_over_b,r_b)')
+        self.modelBuilder.doVar("bbar_over_b_Under_m4.5[1,0.1,2]")
+        self.modelBuilder.doVar("bbar_over_b_m4.5_To_m3.5[1,0.1,2]")
+        self.modelBuilder.doVar("bbar_over_b_Over_m3.5[1,0.1,2]")
+
+        self.modelBuilder.doVar("r_b_Under_m4.5[1,0.1,2]")
+        self.modelBuilder.doVar("r_b_m4.5_To_m3.5[1,0.1,2]")
+        self.modelBuilder.doVar("r_b_Over_m3.5[1,0.1,2]")
+
+        POI_LIST.append('bbar_over_b_Under_m4.5')
+        POI_LIST.append('bbar_over_b_m4.5_To_m3.5')
+        POI_LIST.append('bbar_over_b_Over_m3.5')
+        self.modelBuilder.factory_( 'expr::r_bbar_Under_m4.5(\"@0*@1\", bbar_over_b_Under_m4.5,r_b_Under_m4.5)')
+        self.modelBuilder.factory_( 'expr::r_bbar_m4.5_To_m3.5(\"@0*@1\", bbar_over_b_m4.5_To_m3.5,r_b_m4.5_To_m3.5)')
+        self.modelBuilder.factory_( 'expr::r_bbar_Over_m3.5(\"@0*@1\", bbar_over_b_Over_m3.5,r_b_Over_m3.5)')
         POIS=",".join(POI_LIST)
         self.modelBuilder.doSet("POI",POIS)
 
@@ -36,14 +45,27 @@ class bbarAsym(PhysicsModel):
     def getYieldScale(self,bin,process): ##bin process in datacard
         #print("<getYieldScale>")
         #print(process)
-        if "DYbbar"==process or "DY_bbar"==process or "DY_bplus"==process :
-            print("DY b+")
-            return "r_bbar"
-        elif "DYbevt"==process or "DYb"==process or "DY_b"==process or "DY_bminus"==process:
+        scale=1
+        if 'DYbminus' in process:            
             print("DY b-")
-            return "r_b"
+            if 'logx_Over_m3.5' in process:
+                scale='r_b_Over_m3.5'
+            elif 'logx_Under_m4.5' in process:
+                scale='r_b_Under_m4.5'
+            elif 'logx_m4.5_To_m3.5' in process:
+                scale='r_b_m4.5_To_m3.5'
+        elif 'DYbplus' in process
+            print("DY b+")
+            if 'logx_Over_m3.5' in process:
+                scale='r_bbar_Over_m3.5'
+            elif 'logx_Under_m4.5' in process:
+                scale='r_bbar_Under_m4.5'
+            elif 'logx_m4.5_To_m3.5' in process:
+                scale='r_bbar_m4.5_To_m3.5'
+
+            
         else: ## other bkg
             return 1
 
-    
+        return scale
 bbarAsymFit=bbarAsym()
