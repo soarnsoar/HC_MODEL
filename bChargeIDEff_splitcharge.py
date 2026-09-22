@@ -44,10 +44,7 @@ class bChargeIDEff(PhysicsModel):
         ## common norm. factor of denominator of b+ b-'s efficiency
         ## rpass*Npass + rfail*Nfail = C_b(Npass + Nfail)
         self.modelBuilder.doVar("C_b[1, 0,10]")
-        if self.Norm_bkg:
-            self.modelBuilder.doVar("C_others[1, 0,10]")
-        else:
-            self.modelBuilder.factory_( 'expr::C_others( \"1 \", C_b)')
+        self.modelBuilder.factory_( 'expr::C_others( \"1 \", C_b)')
         #POI_LIST=["SF0,dSF"]
         POI_LIST=["SF_bminus","SF_bplus"]
         
@@ -107,7 +104,6 @@ class bChargeIDEff(PhysicsModel):
         self.passname="NOTSET"
         self.failname="NOTSET"
         self.QCD_on=0
-        self.Norm_bkg=0
         self.splitQCD=0
         self.dict_ymc={}
 
@@ -123,8 +119,6 @@ class bChargeIDEff(PhysicsModel):
                 print( key,value)
             elif "QCD_on" in po:
                 self.QCD_on=1
-            elif "Norm_bkg" in po:
-                self.Norm_bkg=1
             elif "splitQCD" in po:
                 self.splitQCD=1
         for key in self.dict_ymc:

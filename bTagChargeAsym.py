@@ -6,74 +6,52 @@ class bTagChargeAsym(PhysicsModel):
 
     def __init__(self):
         PhysicsModel.__init__(self)
+    def preProcessNuisances(self, nuisances):
 
-
+        if not any(row[0] == "theta_C_Others" for row in nuisances):
+            nuisances.append(
+                ("theta_C_Others", False, "param", ["0", "1"], [])
+            )
+            
 
     def doParametersOfInterest(self):
         print("<doParametersOfInterest>")
         """Create POI out of signal strength """
         POI_LIST=[]
-        origins=["bplus","bminus","Others"]
-        
-        ####------SF for Others(Not from b+/-  --> Not setting Charge Asym Factor 
-        
-        _min="0.0"
-        _max="10.0"
-        N1=self.dict_ymc["N_Others_PASS"]
-        N2=self.dict_ymc["N_Others_FAIL"]
-        ####----measured efficiency cannot be > 1, so, SF*initeff<1 -> SF_max = 1/initeff
-        _max_SF=min( float(_max), ((float(N1)+float(N2))/float(N1)))        
-        _max_SF=str(_max_SF)
-
-
-
-
-        if not self.NoScaleOnOthers :
-            print("SF_Others[1, "+_min+" , "+_max_SF+"]")
-            self.modelBuilder.doVar("SF_Others[1, "+_min+" , "+_max_SF+"]")
+        origins=["bplus","bminus"]
         
         ####------SF for b+/b- ---> SF0 +- dSF_Asym
 
         self.modelBuilder.doVar("dAsym[0, -1. ,1]")
-        
         if self.FreezeSF0:
-            print("[Freeze SF0]")
-            #self.modelBuilder.doVar("SF0[1., 1. ,1.]")
             self.modelBuilder.factory_( 'expr::SF0(\"1.\", dAsym)')
         else:
-            self.modelBuilder.doVar("SF0[1, 0. ,3.0]")
-            POI_LIST.append("SF0")            
-
-
-        self.modelBuilder.factory_( 'expr::SF_bplus(\"@0*(1+@1)\", SF0,dAsym)')
-        self.modelBuilder.factory_( 'expr::SF_bminus(\"@0*(1-@1)\", SF0,dAsym)')
+            self.modelBuilder.doVar("SF0[1, 0. ,2]")
+            POI_LIST.append("SF0")
+        self.modelBuilder.factory_( 'expr::SF_bplus(\"@0*(1.+@1)\", SF0,dAsym)')
+        self.modelBuilder.factory_( 'expr::SF_bminus(\"@0*(1.-@1)\", SF0,dAsym)')
 
 
         POI_LIST.append("dAsym")
 
-        if self.Norm_bPlusMinus:
-            
-            self.modelBuilder.doVar("C_b[1, 0. ,3.0]")
-            self.modelBuilder.doVar("C_Others[1, 0. ,3.0]")
-            
-        if self.Norm_MC:
-            self.modelBuilder.doVar("C_norm[1, 0. ,3.0]")
+        self.modelBuilder.doVar("C_b[1., 0. ,3.0]")
+        if self.FreezeSF0:
+            self.modelBuilder.doVar("C_Others[1., 0. ,3.0]")
+        else:
+            if not self.modelBuilder.out.var("theta_C_Others"):
+                self.modelBuilder.doVar("theta_C_Others[0,-5,5]")
 
+            # 50% log-normal normalization factor
+            self.modelBuilder.factory_(
+                'expr::C_Others("pow(1.5,@0)", theta_C_Others)'
+            )
+        
             
         for origin in origins:
 
             _min="0."
             _max="3.0"
-            if "Others" in origin :
-                _min="0.0"
-                _max="10.0"
-
-            if self.NoScaleOnOthers:
-                if origin=="Others" : continue
-            else:
-                if origin=="Others" :
-                    self.modelBuilder.doVar("SF_Others[1, "+_min+" , "+_max+"]")
-
+        
             ##----Load init yield of each channel
             #N1=Pass
             #N2=Fail
@@ -82,19 +60,10 @@ class bTagChargeAsym(PhysicsModel):
 
             r1="r_"+origin+"_PASS"
             r2="r_"+origin+"_FAIL" ## will be expressed with C & SF
-            C="C_"+origin  ## Pass + Fail Overall norm factor
+            C="C_b"  ## Pass + Fail Overall norm factor
             SF="SF_"+origin
 
-            ##C --> norm factor
-            if self.ConserveYield:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"1\", '+SF+')')                
-            elif self.Norm_bPlusMinus:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"@0\", C_b)') ## apply overall C_b to C_bplus C_bminus
-            elif self.Norm_MC:
-                self.modelBuilder.factory_( 'expr::'+C+'(\"@0\", C_norm)')
-            else:
-                self.modelBuilder.doVar(C+"[1, "+_min+" , "+_max+"]")                
-            
+                        
             ## r1 = SF*C
             self.modelBuilder.factory_( 'expr::'+r1+'(\"@0*@1\", '+SF+','+C+')')
             print('expr::'+r1+'(\"@0*@1\", '+SF+','+C+')')
@@ -111,7 +80,7 @@ class bTagChargeAsym(PhysicsModel):
 
         POIS=",".join(POI_LIST)
         ##----UseOnly dAsym As POI
-        POIS="dAsym"
+        #POIS="dAsym"
         #if self.Norm_bPlusMinus:
         #    POIS+=",C_b"
         #    POIS+=",C_Others"
@@ -121,12 +90,8 @@ class bTagChargeAsym(PhysicsModel):
     def setPhysicsOptions(self,physOptions):
         print("<setPhysicsOptions>")
         print(str(physOptions))
-
-        self.NoScaleOnOthers=0
         self.FreezeSF0=0
-        self.ConserveYield=0
-        self.Norm_bPlusMinus=0
-        self.Norm_MC=0
+        
         self.dict_ymc={}
 
         for po in physOptions:
@@ -136,24 +101,10 @@ class bTagChargeAsym(PhysicsModel):
                 value=float(po.split("=")[1])
                 self.dict_ymc[key]=str(value)
                 print( key,value)
-            if 'ApplyBtagSF' in po:
-                self.NoScaleOnOthers=1
-                print("!!ApplyBtagSF!!")
-            if 'FloatOthers' in po:
-                self.NoScaleOnOthers=0
-                print("!!FloatOtherOrigins!!")
-            if 'ConserveYield' in po:
-                self.ConserveYield=1
-            if 'Norm_bPlusMinus' in po:
-                self.Norm_bPlusMinus=1
-                print("!! bplus/bminus have the common norm for denominator")
-            if 'Norm_MC' in po:
-                self.Norm_MC=1
-                self.Norm_bPlusMinus=0
-                print("!! Add param for overall MC norm")
             if 'FreezeSF0' in po:
                 self.FreezeSF0=1
                 print("!!Freeze SF0!!")
+            
         for key in self.dict_ymc:
             print(key,self.dict_ymc[key])
     def getYieldScale(self,bin,process): ##bin process in datacard
@@ -188,13 +139,8 @@ class bTagChargeAsym(PhysicsModel):
         
         scale= "r_"+origin+"_"+PassFail
 
-        if self.NoScaleOnOthers:
-            if 'from_Others' in process:
-                scale=1
-                if self.Norm_bPlusMinus:
-                    scale="C_Others"
-                if self.Norm_MC:
-                    scale="C_norm"
+        if 'from_Others' in process:
+            scale="C_Others"
         print (scale)
         return scale
 bTagChargeAsymFit=bTagChargeAsym()
