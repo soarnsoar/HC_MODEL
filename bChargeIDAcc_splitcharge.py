@@ -15,6 +15,7 @@ class bChargeIDAcc(PhysicsModel):
 
         ##acc = (correctly measured)/(wrongly measured + correctly measured)
         
+
         _min="0."
         _max="10.0"
                 
@@ -24,10 +25,6 @@ class bChargeIDAcc(PhysicsModel):
         N_bminus_WRONG=self.dict_ymc["N_bminus_WRONG"]
         N_bplus_WRONG=self.dict_ymc["N_bplus_WRONG"]
 
-        #self.modelBuilder.doVar("r_pass[1, "+_min+" , "+_max+"]")
-        #self.modelBuilder.doVar("r_bminus_fail[1, "+_min+" , "+_max+"]")
-        #self.modelBuilder.doVar("r_bplus_fail[1, "+_min+" , "+_max+"]")                
-            
             
         ####------SF
         ##max = N_WRONG + N_CORR)/N_CORR
@@ -43,11 +40,8 @@ class bChargeIDAcc(PhysicsModel):
         ## common norm. factor of denominator of b+ b-'s accuracy
         ## rcorr*Ncorr + rwrong*Nwrong = C_b(Ncorr + Nwrong)
         self.modelBuilder.doVar("C_b[1, 0,10]")
-        if self.Norm_bkg:
-            self.modelBuilder.doVar("C_others[1, 0,10]")
-        else:
-            self.modelBuilder.factory_( 'expr::C_others( \"1 \", C_b)')
-        #POI_LIST=["SF0,dSF"]
+        self.modelBuilder.factory_( 'expr::C_others( \"1 \", C_b)')
+        
         POI_LIST=["SF_bminus","SF_bplus"]
         
 
@@ -117,8 +111,6 @@ class bChargeIDAcc(PhysicsModel):
                 print( key,value)
             elif "QCD_on" in po:
                 self.QCD_on=1
-            elif "Norm_bkg" in po:
-                self.Norm_bkg=1
             elif "splitQCD" in po:
                 self.splitQCD=1
         for key in self.dict_ymc:
